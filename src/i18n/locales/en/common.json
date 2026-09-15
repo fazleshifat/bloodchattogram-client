@@ -1,0 +1,19 @@
+{
+  "brand": {
+    "name": "BloodChattogram",
+    "tagline": "Save Lives, One Drop at a Time"
+  },
+  "bloodGroups": {
+    "label": "Blood Group"
+  },
+  "buttons": {
+    "learnMore": "Learn More",
+    "explore": "Explore",
+    "sendMessage": "Send Message",
+    "bookMeeting": "Book a Meeting"
+  },
+  "language": {
+    "english": "English",
+    "bangla": "বাংলা"
+  }
+}

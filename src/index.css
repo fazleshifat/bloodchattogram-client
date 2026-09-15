@@ -1,0 +1,187 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ===== Base & Typography ===== */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Bangla needs a font that actually supports the script, plus a slightly
+   taller line-height (conjuncts/matras need more vertical room than Latin). */
+html[lang="bn"] body {
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'Inter', system-ui, sans-serif;
+    line-height: 1.7;
+}
+
+/* ===== Custom Scrollbar ===== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #dc2626, #ef4444);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #b91c1c, #dc2626);
+}
+
+/* ===== Selection Color ===== */
+::selection {
+    background-color: #dc262640;
+    color: #1f2937;
+}
+
+.dark ::selection {
+    background-color: #ef444440;
+    color: #f9fafb;
+}
+
+/* ===== Glassmorphism Utility ===== */
+.glass-nav {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.78);
+}
+.dark .glass-nav {
+    background-color: rgba(17, 24, 39, 0.82);
+}
+
+/* ===== Gradient Text ===== */
+.gradient-text {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-blue {
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===== Animated Gradient Background ===== */
+.animated-gradient {
+    background: linear-gradient(-45deg, #fef2f2, #fee2e2, #fce7f3, #ede9fe);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+.dark .animated-gradient {
+    background: linear-gradient(-45deg, #111827, #1f2937, #1e1b4b, #0f172a);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ===== Pulse Glow for CTA ===== */
+.pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+    50% { box-shadow: 0 0 20px 6px rgba(220, 38, 38, 0.15); }
+}
+
+/* ===== Card Hover Lift ===== */
+.card-hover {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+.card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Shimmer effect for loading states ===== */
+.shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ===== Floating animation ===== */
+.float {
+    animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+/* ===== Stats counter animation ===== */
+.stat-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+.dark .stat-card {
+    background: linear-gradient(135deg, rgba(31,41,55,0.9) 0%, rgba(31,41,55,0.6) 100%);
+    border: 1px solid rgba(75,85,99,0.3);
+}
+
+/* ===== Swiper Customization ===== */
+.swiper-pagination-bullet {
+    background: #dc2626 !important;
+    opacity: 0.4 !important;
+}
+.swiper-pagination-bullet-active {
+    opacity: 1 !important;
+    background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+}
+
+/* ===== Sidebar active link animation ===== */
+.sidebar-link {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.sidebar-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: linear-gradient(180deg, #dc2626, #ef4444);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+    border-radius: 0 4px 4px 0;
+}
+.sidebar-link:hover::before,
+.sidebar-link.active::before {
+    transform: scaleY(1);
+}
+
+/* ===== Input focus animation ===== */
+.input-focus-ring:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* ===== Section divider ===== */
+.section-divider {
+    height: 4px;
+    width: 80px;
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+    border-radius: 2px;
+    margin: 0 auto;
+}

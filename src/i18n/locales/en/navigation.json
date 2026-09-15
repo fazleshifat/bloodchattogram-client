@@ -1,0 +1,18 @@
+{
+  "home": "Home",
+  "donationRequests": "Donation Requests",
+  "blog": "Blog",
+  "login": "Login",
+  "register": "Register",
+  "dashboard": "Dashboard",
+  "logout": "Logout",
+  "searchDonors": "Search Donors",
+  "logoutConfirm": {
+    "title": "Are you sure?",
+    "text": "You will be logged out of your account.",
+    "confirm": "Yes, logout",
+    "cancel": "Cancel",
+    "successTitle": "Logged Out",
+    "successText": "You have been successfully logged out."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "pageTitle": "BloodChattogram | Home",
+  "banner": {
+    "badge": "Every Drop Counts",
+    "headingLine1": "Give the Gift of",
+    "headingHighlight": "Life",
+    "headingLine2": "Donate Blood Today",
+    "subtext": "Your contribution can save lives. Join our network of lifesavers or search for a donor in your area. Be a hero today.",
+    "donateBlood": "Donate Blood",
+    "searchDonors": "Search Donors",
+    "stats": {
+      "livesSaved": "Lives Saved",
+      "activeDonors": "Active Donors",
+      "bloodGroups": "Blood Groups"
+    }
+  },
+  "bloodGroupsSection": {
+    "heading": "All Blood Groups Supported"
+  },
+  "featured": {
+    "eyebrow": "What We Do",
+    "heading": "Featured",
+    "headingHighlight": "Services",
+    "subtext": "Discover our comprehensive range of services designed to save lives and build a stronger donor community.",
+    "items": {
+      "awareness": {
+        "title": "Blood Donation Awareness",
+        "description": "Engaging programs that educate the public about the importance of regular blood donation."
+      },
+      "emergency": {
+        "title": "Emergency Response Drives",
+        "description": "Swift community mobilization during urgent needs and disasters."
+      },
+      "healthCamps": {
+        "title": "Health Check-Up Camps",
+        "description": "Free health screening and consultations organized in underserved areas."
+      },
+      "appreciation": {
+        "title": "Donor Appreciation Events",
+        "description": "Recognizing and celebrating our heroes who save lives by donating."
+      },
+      "youth": {
+        "title": "Youth Volunteering Programs",
+        "description": "Empowering the younger generation to lead blood donation awareness campaigns."
+      },
+      "mobileUnits": {
+        "title": "Mobile Donation Units",
+        "description": "Reaching remote areas to collect and provide lifesaving blood supply."
+      }
+    }
+  },
+  "cta": {
+    "heading": "Ready to Save a Life?",
+    "subtext": "Your single donation can save up to three lives. Join thousands of donors who are making a difference every day.",
+    "donateBlood": "Donate Blood",
+    "findDonor": "Find a Donor"
+  },
+  "contact": {
+    "eyebrow": "Get In Touch",
+    "heading": "Contact",
+    "headingHighlight": "Us",
+    "subtext": "Have questions or want to collaborate? We'd love to hear from you.",
+    "email": "Email",
+    "phone": "Phone",
+    "location": "Location",
+    "locationValue": "189, Mirsarai, Chittagong, Bangladesh",
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "email": "Email Address",
+      "emailPlaceholder": "your@email.com",
+      "message": "Your Message",
+      "messagePlaceholder": "Write your message here..."
+    }
+  }
+}

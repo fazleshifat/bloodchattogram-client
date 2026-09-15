@@ -1,0 +1,19 @@
+{
+  "brand": {
+    "name": "ব্লাডচট্টগ্রাম",
+    "tagline": "এক ফোঁটায় জীবন বাঁচান"
+  },
+  "bloodGroups": {
+    "label": "রক্তের গ্রুপ"
+  },
+  "buttons": {
+    "learnMore": "আরও জানুন",
+    "explore": "দেখুন",
+    "sendMessage": "বার্তা পাঠান",
+    "bookMeeting": "মিটিং বুক করুন"
+  },
+  "language": {
+    "english": "English",
+    "bangla": "বাংলা"
+  }
+}
