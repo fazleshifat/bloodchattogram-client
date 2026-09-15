@@ -45,7 +45,7 @@ const AddBlog = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Dropvein | Add Blog";
+        document.title = "Add Blog";
     }, []);
 
 

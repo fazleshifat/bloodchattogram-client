@@ -20,7 +20,7 @@ const AllDonationRequests = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = 'Dropvein | All Donation Request';
+        document.title = 'All Donation Request';
     }, []);
 
     const { data: donationRequests = { data: [], total: 0 }, isLoading, refetch } = useQuery({

@@ -2,33 +2,43 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
-import useAxios from '../../../../hooks/useAxios';
-import useAuth from '../../../../hooks/useAuth';
-import Spinner from '../../../../components/Spinner';
+
 import useAxiosSecure from '../../../../hooks/useAxiosSecure';
+import Spinner from '../../../../components/Spinner';
+import useAuth from '../../../../hooks/useAuth';
+
 import {
-    FaTint, FaUser, FaEnvelope, FaMapMarkerAlt, FaHospital,
-    FaCalendarAlt, FaClock, FaCommentMedical, FaCheckCircle,
-    FaHandHoldingHeart, FaUserCheck, FaTimesCircle
+    FaTint,
+    FaUser,
+    FaEnvelope,
+    FaMapMarkerAlt,
+    FaHospital,
+    FaCalendarAlt,
+    FaClock,
+    FaCommentMedical,
+    FaCheckCircle,
+    FaHandHoldingHeart,
+    FaUserCheck,
+    FaTimesCircle,
+    FaPhone
 } from 'react-icons/fa';
 
 const DonationRequestDetails = () => {
     const { id } = useParams();
-    const axios = useAxios();
+
     const axiosSecure = useAxiosSecure();
     const { user } = useAuth();
+
     const [isOpen, setIsOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const { register, handleSubmit } = useForm();
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        document.title = "Dropvein | Donation Request Details";
-    }, []);
-
-    const { data, isLoading, isError, refetch } = useQuery({
+    const {
+        data,
+        isLoading,
+        isError,
+        refetch
+    } = useQuery({
         queryKey: ['donation-request-details', id],
         queryFn: async () => {
             const res = await axiosSecure.get(`/donation-requests/${id}`);
@@ -36,310 +46,835 @@ const DonationRequestDetails = () => {
         }
     });
 
+    const {
+        data: donorProfile = [],
+        isLoading: donorProfileLoading
+    } = useQuery({
+        queryKey: ['donor-profile', user?.email],
+        enabled: !!user?.email,
+        queryFn: async () => {
+            const res = await axiosSecure.get(`/profile?email=${user.email}`);
+            return res.data;
+        }
+    });
+
+    const donor = donorProfile?.[0];
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        document.title = 'Dropvein | Donation Request Details';
+    }, []);
+
+    if (isLoading) {
+        return <Spinner />;
+    }
+
+    if (isError || !data) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+                <div className="text-center">
+                    <FaTimesCircle className="text-5xl text-red-500 mx-auto mb-4" />
+
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                        Request Not Found
+                    </h2>
+
+                    <p className="text-gray-500 dark:text-gray-400">
+                        We could not find this donation request.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    const {
+        requesterName,
+        requesterEmail,
+        requesterPhone,
+        recipientName,
+        recipientDistrict,
+        recipientUpazila,
+        hospitalName,
+        fullAddressLine,
+        bloodGroup,
+        donationDate,
+        donationTime,
+        requestMessage,
+        donationStatus,
+        createdAt,
+        updatedAt,
+        donorName,
+        donorPhone,
+        donorEmail,
+        donorDistrict,
+        donationConfirmedAt
+    } = data;
+
+    const statusConfig = {
+        pending: {
+            label: 'Pending',
+            color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+            icon: <FaClock />
+        },
+
+        inprogress: {
+            label: 'Donation In Progress',
+            color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+            icon: <FaHandHoldingHeart />
+        },
+
+        done: {
+            label: 'Completed',
+            color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+            icon: <FaCheckCircle />
+        },
+
+        canceled: {
+            label: 'Canceled',
+            color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+            icon: <FaTimesCircle />
+        }
+    };
+
+    const status = statusConfig[donationStatus] || statusConfig.pending;
+
+    const donationDateTime = new Date(
+        `${donationDate} ${donationTime}`
+    );
+
+    const isDonationTimePassed =
+        !isNaN(donationDateTime.getTime()) &&
+        new Date() > donationDateTime;
+
+    const canDonate =
+        donationStatus === 'pending' &&
+        !donorName &&
+        !isDonationTimePassed;
+
     const onConfirmDonation = async () => {
-        const confirm = await Swal.fire({
-            title: 'Are you sure?',
-            text: 'You are about to confirm your blood donation. Proceed?',
+        const result = await Swal.fire({
+            title: 'Confirm Donation?',
+            text: 'Are you sure you want to donate blood for this request?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#dc2626',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, donate!',
+            confirmButtonText: 'Yes, I will Donate',
             cancelButtonText: 'Cancel'
         });
 
-        if (!confirm.isConfirmed) return;
+        if (!result.isConfirmed) return;
 
         setSubmitting(true);
+
         try {
-            await axiosSecure.patch(`/donation-requests/status/${id}/inprogress`, {
-                donorName: user?.displayName || 'Anonymous',
-                donorEmail: user?.email || 'No Email'
-            });
+            await axiosSecure.patch(
+                `/donation-requests/status/${id}/inprogress`,
+                {
+                    donorName: donor?.name || 'Anonymous',
+                    donorPhone: donor?.phone || 'Not provided',
+                    donorEmail: donor?.email || 'No Email',
+                    donorDistrict: donor?.district || 'Not provided'
+                }
+            );
+
             await refetch();
-            Swal.fire({ icon: 'success', title: 'Donation Confirmed' });
+
             setIsOpen(false);
-        } catch (err) {
-            console.error(err);
-            Swal.fire({ icon: 'error', title: 'Failed to confirm donation' });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Thank You!',
+                text: 'You have successfully joined this blood donation request.',
+                confirmButtonColor: '#dc2626'
+            });
+        } catch (error) {
+            console.error(error);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Something went wrong',
+                text:
+                    error?.response?.data?.message ||
+                    'Unable to confirm your donation. Please try again.',
+                confirmButtonColor: '#dc2626'
+            });
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (isLoading) return <Spinner />;
-    if (isError || !data) return (
-        <div className="min-h-[60vh] flex items-center justify-center">
-            <p className="text-red-500 text-lg font-medium">Failed to load donation request.</p>
-        </div>
-    );
-
-    const {
-        requesterName, requesterEmail, recipientName,
-        recipientDistrict, recipientUpazila, hospitalName,
-        fullAddressLine, bloodGroup, donationDate, donationTime,
-        requestMessage, donationStatus, createdAt, updatedAt,
-        donorName, donorEmail, donationConfirmedAt
-    } = data;
-
-    const statusConfig = {
-        pending: { color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', label: 'Pending' },
-        inprogress: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', label: 'In Progress' },
-        done: { color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400', label: 'Completed' },
-        canceled: { color: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', label: 'Cancelled' },
-    };
-
-    const status = statusConfig[donationStatus] || statusConfig.pending;
-
     return (
-        <div className="py-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-            <div className="max-w-4xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+
+            <div className="max-w-7xl mx-auto">
 
                 {/* Header */}
-                <div className="text-center mb-2">
-                    <span className="inline-block px-4 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium mb-4">
-                        Request Details
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-                        Donation <span className="gradient-text">Request</span>
-                    </h2>
-                    <div className="section-divider"></div>
+                <div className="mb-8">
+
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                        <span>Blood Donation</span>
+                        <span>/</span>
+                        <span>Request Details</span>
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
+                        Donation Request Details
+                    </h1>
+
+                    <p className="text-gray-500 dark:text-gray-400 mt-2">
+                        View complete information about this blood donation request.
+                    </p>
+
                 </div>
 
-                {/* Blood Group & Status Hero Card */}
-                <div className="relative bg-gradient-to-r from-red-600 to-rose-600 rounded-2xl p-8 text-white overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3"></div>
-                    <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+
+                {/* Hero */}
+                <div className="relative bg-gradient-to-r from-red-600 to-rose-600 rounded-2xl p-3 lg:p-7 text-white overflow-hidden mb-8">
+
+                    <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/10"></div>
+
+                    <div className="absolute -left-20 -bottom-20 w-56 h-56 rounded-full bg-white/10"></div>
+
+                    <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 lg:gap-6">
+
+                        {/* Recipient */}
                         <div className="flex items-center gap-5">
-                            <div className="w-20 h-20 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                                <span className="text-3xl font-black">{bloodGroup}</span>
+
+                            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                <FaTint className="text-4xl text-white" />
                             </div>
+
                             <div>
-                                <h3 className="text-2xl font-bold">{recipientName}</h3>
-                                <p className="text-red-200 text-sm flex items-center gap-1 mt-1">
-                                    <FaMapMarkerAlt className="text-xs" /> {recipientDistrict}, {recipientUpazila}
+
+                                <p className="text-red-100 text-sm mb-1">
+                                    Blood Needed
                                 </p>
-                                <p className="text-red-200 text-sm flex items-center gap-1 mt-0.5">
-                                    <FaHospital className="text-xs" /> {hospitalName}
+
+                                <div className="flex items-center gap-3">
+
+                                    <h2 className="text-4xl font-bold">
+                                        {bloodGroup}
+                                    </h2>
+
+                                    <span className="text-xl text-red-100">
+                                        for {recipientName}
+                                    </span>
+
+                                </div>
+
+                                <p className="text-red-100 text-sm mt-2 flex items-center gap-1">
+                                    <FaMapMarkerAlt />
+                                    {recipientDistrict}, {recipientUpazila}
                                 </p>
+
                             </div>
                         </div>
+
+
+                        {/* Status + Time */}
                         <div className="text-center sm:text-right">
-                            <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${status.color}`}>
-                                {status.label}
-                            </span>
-                            <div className="mt-3 flex items-center gap-4 text-red-100 text-sm">
-                                <span className="flex items-center gap-1"><FaCalendarAlt className="text-xs" /> {donationDate}</span>
-                                <span className="flex items-center gap-1"><FaClock className="text-xs" /> {donationTime}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
 
-                    {/* Requester Info */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Requester Info</h4>
-                        <div className="space-y-4">
-                            <DetailRow icon={<FaUser className="text-blue-500" />} label="Name" value={requesterName} />
-                            <DetailRow icon={<FaEnvelope className="text-blue-500" />} label="Email" value={requesterEmail} />
-                        </div>
-                    </div>
+                                {/* Current Request Status */}
+                                {
+                                    !isDonationTimePassed &&
+                                    <span
+                                        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold ${status.color}`}
+                                    >
+                                        {status.icon}
+                                        {status.label}
+                                    </span>
+                                }
 
-                    {/* Recipient Info */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Recipient Info</h4>
-                        <div className="space-y-4">
-                            <DetailRow icon={<FaUser className="text-red-500" />} label="Name" value={recipientName} />
-                            <DetailRow icon={<FaTint className="text-red-500" />} label="Blood Group" value={bloodGroup} />
-                            <DetailRow icon={<FaMapMarkerAlt className="text-red-500" />} label="Location" value={`${recipientDistrict}, ${recipientUpazila}`} />
-                        </div>
-                    </div>
+                                {/* Donation Time Passed */}
+                                {isDonationTimePassed && (
+                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                                        <FaTimesCircle />
+                                        Donation Time Passed
+                                    </span>
+                                )}
 
-                    {/* Hospital Info */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Hospital Details</h4>
-                        <div className="space-y-4">
-                            <DetailRow icon={<FaHospital className="text-emerald-500" />} label="Hospital" value={hospitalName} />
-                            <DetailRow icon={<FaMapMarkerAlt className="text-emerald-500" />} label="Full Address" value={fullAddressLine} />
-                            <DetailRow icon={<FaCalendarAlt className="text-emerald-500" />} label="Date" value={donationDate} />
-                            <DetailRow icon={<FaClock className="text-emerald-500" />} label="Time" value={donationTime} />
-                        </div>
-                    </div>
-
-                    {/* Status & Timeline */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Status & Timeline</h4>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-0.5 p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                    <FaCheckCircle className="text-sm text-gray-500" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">Status</p>
-                                    <span className={`inline-block mt-0.5 px-3 py-0.5 rounded-full text-xs font-semibold ${status.color}`}>{status.label}</span>
-                                </div>
-                            </div>
-                            <DetailRow icon={<FaCalendarAlt className="text-gray-500" />} label="Created" value={format(new Date(createdAt), 'PPpp')} />
-                            <DetailRow icon={<FaCalendarAlt className="text-gray-500" />} label="Updated" value={updatedAt ? format(new Date(updatedAt), 'PPpp') : 'Never updated'} />
-                            <DetailRow icon={<FaCalendarAlt className="text-gray-500" />} label="Confirmed" value={donationConfirmedAt ? format(new Date(donationConfirmedAt), 'PPpp') : 'Not yet'} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Message */}
-                {requestMessage && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-2">
-                            <FaCommentMedical className="text-red-400" /> Request Message
-                        </h4>
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-sm italic">
-                            "{requestMessage}"
-                        </p>
-                    </div>
-                )}
-
-                {/* Donor Info (if donated) */}
-                {donorName && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border border-green-200 dark:border-green-800/40 rounded-2xl p-6">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-green-600 dark:text-green-400 mb-4 flex items-center gap-2">
-                            <FaUserCheck /> Donor Information
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <DetailRow icon={<FaUser className="text-green-500" />} label="Donor Name" value={donorName} />
-                            <DetailRow icon={<FaEnvelope className="text-green-500" />} label="Donor Email" value={donorEmail || 'N/A'} />
-                        </div>
-                    </div>
-                )}
-
-                {/* Donate CTA */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 text-center">
-                    {!donorName ? (
-                        donationStatus === 'pending' ? (
-                            <div>
-                                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center">
-                                    <FaHandHoldingHeart className="text-2xl text-red-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready to Save a Life?</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                                    This patient needs <strong className="text-red-600 dark:text-red-400">{bloodGroup}</strong> blood at <strong>{hospitalName}</strong>.
-                                    Click the button below to confirm your donation.
-                                </p>
-                                <button
-                                    onClick={() => setIsOpen(true)}
-                                    className="inline-flex items-center gap-2 px-10 py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/35 transition-all duration-300 pulse-glow cursor-pointer"
-                                >
-                                    <FaTint className="text-sm" /> Donate Blood Now
-                                </button>
-                            </div>
-                        ) : (
-                            <div>
-                                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
-                                    <FaTimesCircle className="text-2xl text-gray-400" />
-                                </div>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium">
-                                    This request is no longer accepting donations.
-                                </p>
-                            </div>
-                        )
-                    ) : (
-                        <div>
-                            <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center">
-                                <FaCheckCircle className="text-2xl text-green-500" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Donation Confirmed</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                <strong className="text-green-600 dark:text-green-400">{donorName}</strong> has confirmed to donate blood for this request.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Donation Confirmation Modal */}
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 max-w-md w-full overflow-hidden">
-                        {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-red-600 to-rose-600 p-6 text-white text-center">
-                            <div className="w-14 h-14 mx-auto mb-3 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                                <FaHandHoldingHeart className="text-2xl" />
-                            </div>
-                            <h2 className="text-xl font-bold">Confirm Your Donation</h2>
-                            <p className="text-sm text-red-200 mt-1">You're about to save a life</p>
-                        </div>
-
-                        {/* Modal Body */}
-                        <form onSubmit={handleSubmit(onConfirmDonation)} className="p-6 space-y-5">
-                            {/* Donation Summary */}
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 flex items-center gap-4">
-                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg font-black text-red-600 dark:text-red-400">{bloodGroup}</span>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Donating to {recipientName}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">{hospitalName}</p>
-                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Name</label>
-                                <input
-                                    type="text"
-                                    readOnly
-                                    defaultValue={user?.displayName}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm"
-                                />
+
+                            {/* Date + Time */}
+                            <div className="mt-3 flex items-center justify-center sm:justify-end gap-4 text-red-100 text-sm">
+
+                                <span className="flex items-center gap-1">
+                                    <FaCalendarAlt className="text-xs" />
+                                    {donationDate}
+                                </span>
+
+                                <span className="flex items-center gap-1">
+                                    <FaClock className="text-xs" />
+                                    {donationTime}
+                                </span>
+
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Email</label>
-                                <input
-                                    type="email"
-                                    readOnly
-                                    defaultValue={user?.email}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm"
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-2">
+
+
+                            {/* Small Donate Button */}
+                            {canDonate && (
                                 <button
                                     type="button"
+                                    onClick={() => setIsOpen(true)}
+                                    className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-white text-red-600 hover:bg-red-50 text-sm font-semibold shadow-md transition-all duration-300"
+                                >
+                                    <FaHandHoldingHeart />
+                                    Donate Now
+                                </button>
+                            )}
+
+                        </div>
+                    </div>
+                </div>
+
+
+                {/* Main Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-1">
+
+                    {/* Recipient */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 h-fit">
+
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                            Recipient Information
+                        </h4>
+
+                        <div className="space-y-4">
+
+                            <DetailRow
+                                icon={<FaUser className="text-red-500" />}
+                                label="Patient Name"
+                                value={recipientName}
+                            />
+
+                            <DetailRow
+                                icon={<FaTint className="text-red-500" />}
+                                label="Blood Group"
+                                value={bloodGroup}
+                            />
+
+                            <DetailRow
+                                icon={<FaMapMarkerAlt className="text-red-500" />}
+                                label="Location"
+                                value={`${recipientDistrict}, ${recipientUpazila}`}
+                            />
+
+                        </div>
+                    </div>
+
+
+                    {/* Hospital */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 h-fit">
+
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                            Hospital Details
+                        </h4>
+
+                        <div className="space-y-4">
+
+                            <DetailRow
+                                icon={<FaHospital className="text-purple-500" />}
+                                label="Hospital"
+                                value={hospitalName}
+                            />
+
+                            <DetailRow
+                                icon={<FaMapMarkerAlt className="text-purple-500" />}
+                                label="Address"
+                                value={fullAddressLine}
+                            />
+
+                            <DetailRow
+                                icon={<FaCalendarAlt className="text-purple-500" />}
+                                label="Donation Date"
+                                value={donationDate}
+                            />
+
+                            <DetailRow
+                                icon={<FaClock className="text-purple-500" />}
+                                label="Donation Time"
+                                value={donationTime}
+                            />
+
+                        </div>
+                    </div>
+
+
+                    {/* Status */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 h-fit">
+
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                            Status & Timeline
+                        </h4>
+
+                        <div className="space-y-4">
+
+                            <DetailRow
+                                icon={status.icon}
+                                label="Current Status"
+                                value={status.label}
+                            />
+
+                            {isDonationTimePassed && (
+                                <DetailRow
+                                    icon={<FaTimesCircle className="text-red-500" />}
+                                    label="Donation Time"
+                                    value="Donation time has passed"
+                                />
+                            )}
+
+                            {createdAt && (
+                                <DetailRow
+                                    icon={<FaCalendarAlt className="text-gray-500" />}
+                                    label="Request Created"
+                                    value={format(
+                                        new Date(createdAt),
+                                        'dd MMM yyyy, hh:mm a'
+                                    )}
+                                />
+                            )}
+
+                            {updatedAt && (
+                                <DetailRow
+                                    icon={<FaClock className="text-gray-500" />}
+                                    label="Last Updated"
+                                    value={format(
+                                        new Date(updatedAt),
+                                        'dd MMM yyyy, hh:mm a'
+                                    )}
+                                />
+                            )}
+
+                        </div>
+                    </div>
+
+
+                    {/* Requester */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 h-fit">
+
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                            Requester Info
+                        </h4>
+
+                        <div className="space-y-2">
+
+                            <DetailRow
+                                icon={<FaUser className="text-blue-500" />}
+                                label="Name"
+                                value={requesterName}
+                            />
+
+                            <DetailRow
+                                icon={<FaPhone className="text-blue-500" />}
+                                label="Phone"
+                                value={requesterPhone || 'Not provided'}
+                            />
+
+                            <DetailRow
+                                icon={<FaEnvelope className="text-blue-500" />}
+                                label="Email"
+                                value={requesterEmail}
+                            />
+
+                            <DetailRow
+                                icon={<FaCommentMedical className="text-red-500" />}
+                                label="Requester Message"
+                                value={requestMessage}
+                            />
+
+                        </div>
+                    </div>
+
+
+                    {/* Donor Information */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-green-200 dark:border-green-800 p-3 h-fit">
+
+                        <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                            Donor Information
+                        </h4>
+
+                        {donorName ? (
+
+                            <>
+                                <div className="space-y-2">
+
+                                    <DetailRow
+                                        icon={<FaUserCheck className="text-green-500" />}
+                                        label="Donor Name"
+                                        value={donorName}
+                                    />
+
+                                    <DetailRow
+                                        icon={<FaPhone className="text-green-500" />}
+                                        label="Phone"
+                                        value={donorPhone || 'Not provided'}
+                                    />
+
+                                    <DetailRow
+                                        icon={<FaEnvelope className="text-green-500" />}
+                                        label="Email"
+                                        value={donorEmail || 'Not provided'}
+                                    />
+
+                                    <DetailRow
+                                        icon={<FaMapMarkerAlt className="text-green-500" />}
+                                        label="District"
+                                        value={donorDistrict || 'Not provided'}
+                                    />
+
+                                </div>
+
+                                {donationConfirmedAt && (
+                                    <p className="text-xs text-gray-400 mt-4">
+                                        Donation confirmed on{' '}
+                                        {format(
+                                            new Date(donationConfirmedAt),
+                                            'dd MMM yyyy, hh:mm a'
+                                        )}
+                                    </p>
+                                )}
+                            </>
+
+                        ) : (
+
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Donor not found!
+                            </p>
+
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                {/* Bottom CTA */}
+                {canDonate && (
+                    <div className="mt-8 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/10 dark:to-rose-900/10 border border-red-200 dark:border-red-800/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-5">
+
+                        <div className="flex items-center gap-4">
+
+                            <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                <FaHandHoldingHeart className="text-red-500 text-xl" />
+                            </div>
+
+                            <div>
+
+                                <h3 className="font-bold text-gray-800 dark:text-white">
+                                    Can you help?
+                                </h3>
+
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Your donation can help save a life.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            onClick={() => setIsOpen(true)}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold shadow-lg shadow-red-500/20 transition-all"
+                        >
+                            <FaTint />
+                            Donate Blood Now
+                        </button>
+
+                    </div>
+                )}
+
+
+                {/* Already Donated */}
+                {donorName && (
+                    <div className="mt-8 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/40 rounded-2xl p-6 text-center">
+
+                        <FaCheckCircle className="text-green-500 text-3xl mx-auto mb-3" />
+
+                        <h3 className="font-bold text-green-700 dark:text-green-400">
+                            A donor has already joined this request
+                        </h3>
+
+                        <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                            Thank you to the donor for helping save a life.
+                        </p>
+
+                    </div>
+                )}
+
+            </div>
+
+
+            {/* Donation Modal */}
+            {isOpen && (
+
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !submitting && setIsOpen(false)}
+                    ></div>
+
+
+                    {/* Modal */}
+                    <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-red-600 to-rose-600 px-6 py-5 text-white">
+
+                            <div className="flex items-center justify-between">
+
+                                <div>
+
+                                    <h3 className="text-xl font-bold">
+                                        Confirm Blood Donation
+                                    </h3>
+
+                                    <p className="text-red-100 text-sm mt-1">
+                                        Your information will be shared with the requester.
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    disabled={submitting}
                                     onClick={() => setIsOpen(false)}
-                                    className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                                >
+                                    <FaTimesCircle />
+                                </button>
+
+                            </div>
+                        </div>
+
+
+                        {/* Modal Body */}
+                        <div className="p-6">
+
+                            {/* Donation Summary */}
+                            <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-4 mb-6">
+
+                                <div className="flex items-center gap-4">
+
+                                    <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                        <FaTint className="text-red-500 text-xl" />
+                                    </div>
+
+                                    <div>
+
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            You are donating
+                                        </p>
+
+                                        <h4 className="font-bold text-gray-800 dark:text-white">
+                                            {bloodGroup} Blood
+                                        </h4>
+
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            For {recipientName}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+
+                            {/* Donor Information */}
+                            <div className="mb-6">
+
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">
+                                    Donor Information
+                                </h4>
+
+                                {donorProfileLoading ? (
+
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        Loading your profile...
+                                    </div>
+
+                                ) : (
+
+                                    <div className="grid grid-cols-2 gap-2">
+
+                                        {/* Name */}
+                                        <div>
+
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                Name
+                                            </label>
+
+                                            <div className="relative">
+
+                                                <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={donor?.name || 'Not provided'}
+                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none"
+                                                />
+
+                                            </div>
+                                        </div>
+
+
+                                        {/* Phone */}
+                                        <div>
+
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                Phone Number
+                                            </label>
+
+                                            <div className="relative">
+
+                                                <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={donor?.phone || 'Not provided'}
+                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none"
+                                                />
+
+                                            </div>
+                                        </div>
+
+
+                                        {/* Email */}
+                                        <div>
+
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                Email
+                                            </label>
+
+                                            <div className="relative">
+
+                                                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+
+                                                <input
+                                                    type="email"
+                                                    readOnly
+                                                    value={donor?.email || 'Not provided'}
+                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none"
+                                                />
+
+                                            </div>
+                                        </div>
+
+
+                                        {/* District */}
+                                        <div>
+
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                District
+                                            </label>
+
+                                            <div className="relative">
+
+                                                <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={donor?.district || 'Not provided'}
+                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none"
+                                                />
+
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
+
+                            {/* Warning */}
+                            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-6">
+
+                                <p className="text-sm text-amber-700 dark:text-amber-400">
+                                    By confirming, you agree to donate blood for this request.
+                                    Please make sure you can attend at the requested date,
+                                    time, and hospital.
+                                </p>
+
+                            </div>
+
+
+                            {/* Buttons */}
+                            <div className="flex gap-3">
+
+                                <button
+                                    type="button"
+                                    disabled={submitting}
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex-1 px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
                                     Cancel
                                 </button>
+
                                 <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white transition-all duration-300 ${submitting
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/20'
-                                        }`}
+                                    type="button"
+                                    disabled={submitting || donorProfileLoading}
+                                    onClick={onConfirmDonation}
+                                    className="flex-1 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    {submitting ? 'Processing...' : 'Confirm Donation'}
+                                    {submitting ? (
+                                        <>
+                                            <span className="loading loading-spinner loading-sm"></span>
+                                            Confirming...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaHandHoldingHeart />
+                                            Confirm Donation
+                                        </>
+                                    )}
                                 </button>
+
                             </div>
-                        </form>
+
+                        </div>
                     </div>
+
                 </div>
             )}
+
         </div>
     );
 };
 
-const DetailRow = ({ icon, label, value }) => (
-    <div className="flex items-start gap-3">
-        <div className="mt-0.5 p-2 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-            {React.cloneElement(icon, { className: `text-sm ${icon.props.className}` })}
+
+const DetailRow = ({ icon, label, value }) => {
+    return (
+        <div className="flex items-start gap-3">
+
+            <div className="w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                {icon}
+            </div>
+
+            <div className="min-w-0">
+
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {label}
+                </p>
+
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words">
+                    {value || 'Not provided'}
+                </p>
+
+            </div>
+
         </div>
-        <div className="min-w-0">
-            <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 break-words">{value}</p>
-        </div>
-    </div>
-);
+    );
+};
 
 export default DonationRequestDetails;

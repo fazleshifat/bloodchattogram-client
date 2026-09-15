@@ -10,7 +10,7 @@ const Blogs = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Dropvein | Blogs";
+        document.title = "Blogs";
     }, []);
 
     const { data: blogs = [], isLoading, isError } = useQuery({

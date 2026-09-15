@@ -1,0 +1,15 @@
+{
+    "pageTitle": "BloodChattogram | Blood Donation Requests",
+    "pendingDonationRequests": {
+        "badge": "Blood Requests",
+        "heading": "Pending Donation Requests",
+        "subtext": "Browse pending blood donation requests and find someone who needs your help.",
+        "requestCount": "Pending",
+        "date": "Date",
+        "time": "Time",
+        "pending": "Pending",
+        "viewRequest": "View Request",
+        "noRequestsTitle": "No Pending Requests",
+        "noRequestsMessage": "There are currently no pending blood donation requests."
+    }
+}

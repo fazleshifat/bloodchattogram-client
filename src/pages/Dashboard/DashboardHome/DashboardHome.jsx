@@ -10,7 +10,7 @@ const DashboardHome = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = `Dropvein | Dashboard`;
+        document.title = `Dashboard`;
     }, []);
 
     return (

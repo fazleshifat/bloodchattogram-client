@@ -386,7 +386,7 @@ const AdminDashboardHome = () => {
 
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                         Manage donors, monitor blood requests, and support
-                        patients in need through the Dropvein platform.
+                        patients in need through the BloodChattogram platform.
                     </p>
 
                     <div className="mt-5 flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">

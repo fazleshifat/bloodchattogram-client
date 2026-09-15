@@ -44,7 +44,7 @@ const EditDonationRequest = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Dropvein | Edit Donation Request";
+        document.title = "Edit Donation Request";
     }, []);
 
     const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 transition-all text-gray-800 dark:text-gray-200 text-sm";

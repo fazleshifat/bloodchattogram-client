@@ -8,7 +8,7 @@ const ErrorPage = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Dropvein | Page Not Found";
+        document.title = "Page Not Found";
     }, []);
 
     if (Navigation.state === "loading") {

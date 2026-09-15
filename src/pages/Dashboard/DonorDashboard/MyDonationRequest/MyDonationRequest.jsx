@@ -61,7 +61,7 @@ const MyDonationRequests = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Dropvein | My Donation Request";
+        document.title = "My Donation Request";
     }, []);
 
     const totalItems = filteredRequests.length;
@@ -221,7 +221,7 @@ const MyDonationRequests = () => {
             {/* =====================================================
                 HERO HEADER
             ====================================================== */}
-            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-700 via-red-600 to-rose-500 p-6 sm:p-8 lg:p-10 text-white shadow-2xl shadow-red-500/20">
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-700 via-red-600 to-rose-500 p-3 sm:p-4 lg:p-4 text-white shadow-2xl shadow-red-500/20">
 
                 {/* Decorative circles */}
                 <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-sm" />
@@ -233,7 +233,7 @@ const MyDonationRequests = () => {
                     <FaTint className="text-[180px]" />
                 </div>
 
-                <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
 
                     <div className="max-w-2xl">
 
@@ -242,16 +242,16 @@ const MyDonationRequests = () => {
                             Your Blood Mission
                         </div>
 
-                        <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl lg:text-3xl">
+                        <h1 className="text-md font-extrabold tracking-tight sm:text-xl lg:text-2xl">
                             My Donation Requests
                         </h1>
 
-                        <p className="mt-2 max-w-xl text-xs leading-5 text-red-50 sm:text-sm">
+                        <p className="mt-2 max-w-xl text-xs leading-5 text-red-50 sm:text-xs">
                             Track your blood requests, monitor donor activity,
                             and manage every life-saving mission.
                         </p>
 
-                        <div className="mt-6 flex flex-wrap items-center gap-4 text-xs sm:text-sm">
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
 
                             <div className="flex items-center gap-2">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
@@ -959,7 +959,7 @@ const MyDonationRequests = () => {
 
                             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
                                 When you need blood, create a request and let
-                                the Dropvein community help you find a donor.
+                                the BloodChattogram community help you find a donor.
                             </p>
 
                             <Link

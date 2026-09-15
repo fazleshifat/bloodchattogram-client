@@ -16,7 +16,7 @@ const ContentManagement = () => {
     const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
 
-    useEffect(() => { window.scrollTo(0, 0); document.title = "Dropvein | Content Management"; }, []);
+    useEffect(() => { window.scrollTo(0, 0); document.title = "Content Management"; }, []);
 
     const { data: blogs = [], isLoading } = useQuery({
         queryKey: ['blogs', user?.email],

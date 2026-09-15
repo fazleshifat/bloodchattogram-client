@@ -22,7 +22,7 @@ const BlogDetails = () => {
     });
 
     useEffect(() => {
-        if (blog) document.title = `Dropvein | ${blog.title}`;
+        if (blog) document.title = `BloodChattogram | ${blog.title}`;
     }, [blog]);
 
     if (isLoading) return <Spinner />;

@@ -18,22 +18,39 @@ import {
     FaCheckCircle,
     FaMapMarkedAlt,
     FaHeart,
+    FaPhone,
 } from 'react-icons/fa';
 
-const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+const bloodGroups = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'O+',
+    'O-',
+    'AB+',
+    'AB-',
+];
 
 const Profile = () => {
     const { districts, upazilas } = useLoaderData();
     const { user, updateUserProfile } = useAuth();
 
     const [isEditing, setIsEditing] = useState(false);
+
     const axios = useAxios();
     const axiosSecure = useAxiosSecure();
 
     const [userInfo, setUserInfo] = useState({});
     const [profilePic, setProfilePic] = useState('');
+    const [isNewImage, setIsNewImage] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [selectedDistrictName, setSelectedDistrictName] = useState(null);
+
+    const [phoneNumber, setPhoneNumber] = useState('');
+
+    const [selectedDistrictName, setSelectedDistrictName] =
+        useState(null);
+
     const [upazilasRes, setUpazilasRes] = useState([]);
 
     const {
@@ -41,6 +58,7 @@ const Profile = () => {
         handleSubmit,
         reset,
         watch,
+        setValue,
         formState: { errors },
     } = useForm();
 
@@ -66,7 +84,11 @@ const Profile = () => {
                 );
             } else {
                 setUpazilasRes([]);
+                setSelectedDistrictName(null);
             }
+        } else {
+            setUpazilasRes([]);
+            setSelectedDistrictName(null);
         }
     }, [selectedDistrict, districts, upazilas]);
 
@@ -80,15 +102,40 @@ const Profile = () => {
 
             try {
                 const res = await axiosSecure.get(
-                    `/profile?email=${user?.email}`
+                    `/profile?email=${user.email}`
                 );
 
                 const userData = res.data?.[0];
 
                 if (userData) {
                     setUserInfo(userData);
-                    reset(userData);
-                    setProfilePic(userData.photoURL);
+
+                    // ------------------------------------------
+                    // PHONE ARCHITECTURE
+                    // DB:
+                    // +8801831694191
+                    //
+                    // FORM:
+                    // 1831694191
+                    // ------------------------------------------
+
+                    const fullPhone = userData?.phone || '';
+
+                    const editablePhone =
+                        fullPhone.replace(/^\+880/, '');
+
+                    setPhoneNumber(editablePhone);
+
+                    reset({
+                        ...userData,
+                        phone: editablePhone,
+                    });
+
+                    setProfilePic(
+                        userData?.photoURL || ''
+                    );
+
+                    setIsNewImage(false);
                 }
             } catch (error) {
                 console.error(
@@ -99,7 +146,11 @@ const Profile = () => {
         };
 
         fetchUserInfo();
-    }, [user?.email, axios, axiosSecure, reset]);
+    }, [
+        user?.email,
+        axiosSecure,
+        reset,
+    ]);
 
     // ==========================================
     // PAGE TITLE
@@ -107,7 +158,7 @@ const Profile = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = 'Dropvein | Profile';
+        document.title = 'Profile';
     }, []);
 
     // ==========================================
@@ -147,6 +198,8 @@ const Profile = () => {
             setProfilePic(
                 res.data.data.url
             );
+
+            setIsNewImage(true);
         } catch (error) {
             console.error(
                 'Image upload error:',
@@ -162,12 +215,93 @@ const Profile = () => {
     };
 
     // ==========================================
+    // REMOVE NEW IMAGE PREVIEW
+    // ==========================================
+
+    const handleRemoveImage = () => {
+        setProfilePic(
+            userInfo?.photoURL || ''
+        );
+
+        setIsNewImage(false);
+    };
+
+    // ==========================================
+    // ENTER EDIT MODE
+    // ==========================================
+
+    const handleEditProfile = async () => {
+        const result = await Swal.fire({
+            title: 'Edit Profile?',
+            text: 'You are about to enter edit mode.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Yes, edit',
+        });
+
+        if (result.isConfirmed) {
+            const editablePhone =
+                userInfo?.phone?.replace(
+                    /^\+880/,
+                    ''
+                ) || '';
+
+            setPhoneNumber(editablePhone);
+
+            setValue(
+                'phone',
+                editablePhone
+            );
+
+            reset({
+                ...userInfo,
+                phone: editablePhone,
+            });
+
+            setProfilePic(
+                userInfo?.photoURL || ''
+            );
+
+            setIsNewImage(false);
+            setIsEditing(true);
+        }
+    };
+
+    // ==========================================
+    // CANCEL EDIT
+    // ==========================================
+
+    const handleCancel = () => {
+        const originalPhone =
+            userInfo?.phone?.replace(
+                /^\+880/,
+                ''
+            ) || '';
+
+        setPhoneNumber(originalPhone);
+
+        reset({
+            ...userInfo,
+            phone: originalPhone,
+        });
+
+        setProfilePic(
+            userInfo?.photoURL || ''
+        );
+
+        setIsNewImage(false);
+        setIsEditing(false);
+    };
+
+    // ==========================================
     // SUBMIT
     // ==========================================
 
     const onSubmit = async data => {
         if (
             !data.name ||
+            !phoneNumber ||
             !data.blood_group ||
             !data.district ||
             !data.upazila
@@ -175,6 +309,14 @@ const Profile = () => {
             return Swal.fire(
                 'Error',
                 'All fields are required.',
+                'error'
+            );
+        }
+
+        if (!/^1\d{9}$/.test(phoneNumber)) {
+            return Swal.fire(
+                'Invalid Phone Number',
+                'Phone number must start with 1 and contain exactly 10 digits.',
                 'error'
             );
         }
@@ -193,7 +335,15 @@ const Profile = () => {
         if (result.isConfirmed) {
             const updatedInfo = {
                 name: data.name,
-                photoURL: profilePic,
+
+                photoURL:
+                    profilePic ||
+                    userInfo?.photoURL ||
+                    '',
+
+                // Add country code only when saving
+                phone: `+880${phoneNumber}`,
+
                 district: data.district,
                 upazila: data.upazila,
                 blood_group: data.blood_group,
@@ -202,7 +352,7 @@ const Profile = () => {
             try {
                 await updateUserProfile({
                     displayName: updatedInfo.name,
-                    photoURL: profilePic,
+                    photoURL: updatedInfo.photoURL,
                 });
 
                 await axios.patch(
@@ -215,11 +365,23 @@ const Profile = () => {
                     ...updatedInfo,
                 }));
 
+                // Keep form value without +880
+                setPhoneNumber(
+                    phoneNumber
+                );
+
+                reset({
+                    ...updatedInfo,
+                    phone: phoneNumber,
+                });
+
+                setIsNewImage(false);
+
                 toast.success(
                     'Profile updated!'
                 );
 
-                Swal.fire({
+                await Swal.fire({
                     title: 'Success',
                     text: 'Your profile has been updated.',
                     icon: 'success',
@@ -338,6 +500,7 @@ const Profile = () => {
                     </div>
 
                     <button
+                        type="button"
                         className={`
                             inline-flex items-center justify-center gap-2
                             px-5 py-3
@@ -366,35 +529,11 @@ const Profile = () => {
                                 `
                             }
                         `}
-                        onClick={async () => {
-
-                            if (!isEditing) {
-
-                                const result =
-                                    await Swal.fire({
-                                        title: 'Edit Profile?',
-                                        text: 'You are about to enter edit mode.',
-                                        icon: 'question',
-                                        showCancelButton: true,
-                                        confirmButtonColor: '#dc2626',
-                                        confirmButtonText: 'Yes, edit',
-                                    });
-
-                                if (result.isConfirmed) {
-                                    setIsEditing(true);
-                                }
-
-                            } else {
-
-                                setIsEditing(false);
-
-                                reset(userInfo);
-
-                                setProfilePic(
-                                    userInfo?.photoURL || ''
-                                );
-                            }
-                        }}
+                        onClick={
+                            isEditing
+                                ? handleCancel
+                                : handleEditProfile
+                        }
                     >
                         {isEditing ? (
                             <>
@@ -477,7 +616,8 @@ const Profile = () => {
                                                 src={
                                                     profilePic ||
                                                     userInfo?.photoURL ||
-                                                    'https://i.ibb.co/placeholder.png'
+                                                    user?.photoURL ||
+                                                    'https://i.ibb.co/5GzXkwq/user.png'
                                                 }
                                                 alt="Profile"
                                                 className="w-full h-full object-cover rounded-full"
@@ -486,6 +626,43 @@ const Profile = () => {
                                         </div>
 
                                     </div>
+
+                                    {/* Remove NEWLY SELECTED Image */}
+
+                                    {isEditing &&
+                                        isNewImage && (
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleRemoveImage
+                                                }
+                                                className="
+                                                    absolute
+                                                    top-0
+                                                    right-0
+                                                    w-8
+                                                    h-8
+                                                    rounded-full
+                                                    bg-red-600
+                                                    text-white
+                                                    flex
+                                                    items-center
+                                                    justify-center
+                                                    border-4
+                                                    border-white
+                                                    dark:border-gray-900
+                                                    cursor-pointer
+                                                    shadow-lg
+                                                    hover:bg-red-700
+                                                    hover:scale-105
+                                                    transition-all
+                                                    z-10
+                                                "
+                                                title="Remove selected image"
+                                            >
+                                                <FaTimes className="text-xs" />
+                                            </button>
+                                        )}
 
                                     {/* Camera */}
 
@@ -497,12 +674,16 @@ const Profile = () => {
                                             <input
                                                 type="file"
                                                 accept="image/*"
-                                                onChange={handleImageUpload}
+                                                onChange={
+                                                    handleImageUpload
+                                                }
                                                 className="hidden"
                                             />
 
                                         </label>
                                     )}
+
+                                    {/* Verified */}
 
                                     {!isEditing && (
                                         <div className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center border-4 border-white dark:border-gray-900">
@@ -548,13 +729,18 @@ const Profile = () => {
                                 </div>
 
                                 <p className="flex items-center justify-center lg:justify-start gap-2 text-sm text-gray-500 dark:text-gray-400 mt-2">
+
                                     <FaEnvelope className="text-xs text-red-400" />
+
                                     {userInfo?.email ||
                                         user?.email}
+
                                 </p>
 
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 max-w-xl">
-                                    Your profile helps Dropvein connect you with the right blood donation opportunities in your community.
+
+                                    Your profile helps BloodChattogram connect you with the right blood donation opportunities in your community.
+
                                 </p>
 
                                 {uploading && (
@@ -680,17 +866,22 @@ const Profile = () => {
                             </h3>
 
                             <p className="text-xs text-gray-400 mt-1">
+
                                 {isEditing
                                     ? 'Update your information below.'
                                     : 'Your registered account information.'}
+
                             </p>
 
                         </div>
 
                         {isEditing && (
                             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase tracking-wider">
+
                                 <FaEdit />
+
                                 Editing
+
                             </span>
                         )}
 
@@ -701,7 +892,7 @@ const Profile = () => {
                         className="p-6 sm:p-8"
                     >
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
 
                             {/* ROLE */}
 
@@ -727,59 +918,6 @@ const Profile = () => {
 
                             </div>
 
-                            {/* EMAIL */}
-
-                            <div>
-
-                                <label className={labelClass}>
-                                    <FaEnvelope className="text-orange-400" />
-                                    Email
-                                </label>
-
-                                <div className="relative">
-
-                                    <input
-                                        type="email"
-                                        value={userInfo?.email || ''}
-                                        disabled
-                                        className={`${inputClass} ${disabledClass}`}
-                                    />
-
-                                    <FaEnvelope className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 text-xs" />
-
-                                </div>
-
-                            </div>
-
-                            {/* NAME */}
-
-                            <div>
-
-                                <label className={labelClass}>
-                                    <FaUser className="text-red-400" />
-                                    Full Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    {...register('name', {
-                                        required: 'Name is required',
-                                    })}
-                                    disabled={!isEditing}
-                                    className={`${inputClass} ${!isEditing
-                                        ? disabledClass
-                                        : ''
-                                        }`}
-                                />
-
-                                {errors.name && (
-                                    <p className="text-red-500 text-xs mt-1.5">
-                                        {errors.name.message}
-                                    </p>
-                                )}
-
-                            </div>
-
                             {/* BLOOD */}
 
                             <div>
@@ -791,6 +929,7 @@ const Profile = () => {
 
                                 {isEditing ? (
                                     <>
+
                                         <select
                                             {...register(
                                                 'blood_group',
@@ -806,14 +945,16 @@ const Profile = () => {
                                                 Select blood group
                                             </option>
 
-                                            {bloodGroups.map(bg => (
-                                                <option
-                                                    key={bg}
-                                                    value={bg}
-                                                >
-                                                    {bg}
-                                                </option>
-                                            ))}
+                                            {bloodGroups.map(
+                                                bg => (
+                                                    <option
+                                                        key={bg}
+                                                        value={bg}
+                                                    >
+                                                        {bg}
+                                                    </option>
+                                                )
+                                            )}
 
                                         </select>
 
@@ -826,6 +967,7 @@ const Profile = () => {
                                                 }
                                             </p>
                                         )}
+
                                     </>
                                 ) : (
                                     <div className="relative">
@@ -847,6 +989,225 @@ const Profile = () => {
 
                             </div>
 
+                            {/* NAME */}
+
+                            <div>
+
+                                <label className={labelClass}>
+                                    <FaUser className="text-red-400" />
+                                    Full Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    {...register('name', {
+                                        required:
+                                            'Name is required',
+                                    })}
+                                    disabled={!isEditing}
+                                    className={`${inputClass} ${!isEditing
+                                        ? disabledClass
+                                        : ''
+                                        }`}
+                                />
+
+                                {errors.name && (
+                                    <p className="text-red-500 text-xs mt-1.5">
+                                        {errors.name.message}
+                                    </p>
+                                )}
+
+                            </div>
+
+                            {/* PHONE */}
+
+                            <div>
+
+                                <label className={labelClass}>
+                                    <FaPhone className="text-orange-400" />
+                                    Phone
+                                </label>
+
+                                {/* VIEW MODE */}
+
+                                {!isEditing ? (
+                                    <div
+                                        className="
+                                            flex
+                                            items-center
+                                            w-full
+                                            px-4
+                                            py-3
+                                            rounded-xl
+                                            border
+                                            border-gray-200
+                                            dark:border-gray-700
+                                            bg-gray-100
+                                            dark:bg-gray-800
+                                            text-sm
+                                            text-gray-500
+                                            dark:text-gray-500
+                                        "
+                                    >
+
+                                        <span className="flex-1">
+                                            {userInfo?.phone ||
+                                                'No phone number'}
+                                        </span>
+
+                                        <FaPhone
+                                            className="
+                                                shrink-0
+                                                ml-2
+                                                text-gray-300
+                                                dark:text-gray-600
+                                                text-xs
+                                            "
+                                        />
+
+                                    </div>
+                                ) : (
+                                    /* EDIT MODE */
+
+                                    <div
+                                        className="
+                                            flex
+                                            items-center
+                                            w-full
+                                            px-4
+                                            py-3
+                                            rounded-xl
+                                            border
+                                            border-gray-200
+                                            dark:border-gray-700
+                                            bg-gray-50
+                                            dark:bg-gray-900
+                                            text-sm
+                                            outline-none
+                                            transition-all
+                                            duration-200
+                                            focus-within:border-red-400
+                                            focus-within:ring-4
+                                            focus-within:ring-red-500/10
+                                        "
+                                    >
+
+                                        {/* FIXED COUNTRY CODE */}
+
+                                        <span
+                                            className="
+                                                shrink-0
+                                                text-gray-800
+                                                dark:text-gray-200
+                                                font-medium
+                                            "
+                                        >
+                                            +880
+                                        </span>
+
+                                        {/* ONLY 10 DIGITS */}
+
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                            value={phoneNumber}
+                                            placeholder="1XXXXXXXXX"
+                                            onChange={e => {
+                                                const value =
+                                                    e.target.value
+                                                        .replace(
+                                                            /\D/g,
+                                                            ''
+                                                        )
+                                                        .slice(
+                                                            0,
+                                                            10
+                                                        );
+
+                                                setPhoneNumber(
+                                                    value
+                                                );
+
+                                                setValue(
+                                                    'phone',
+                                                    value,
+                                                    {
+                                                        shouldValidate:
+                                                            true,
+                                                        shouldDirty:
+                                                            true,
+                                                    }
+                                                );
+                                            }}
+                                            className="
+                                                flex-1
+                                                min-w-0
+                                                bg-transparent
+                                                border-none
+                                                outline-none
+                                                text-gray-800
+                                                dark:text-gray-200
+                                                text-sm
+                                                ml-1
+                                                p-0
+                                                focus:ring-0
+                                            "
+                                        />
+
+                                        <FaPhone
+                                            className="
+                                                shrink-0
+                                                ml-2
+                                                text-gray-300
+                                                dark:text-gray-600
+                                                text-xs
+                                                pointer-events-none
+                                            "
+                                        />
+
+                                    </div>
+                                )}
+
+                                {isEditing &&
+                                    phoneNumber &&
+                                    !/^1\d{9}$/.test(
+                                        phoneNumber
+                                    ) && (
+                                        <p className="text-red-500 text-xs mt-1.5">
+                                            Phone number must start with 1 and contain exactly 10 digits
+                                        </p>
+                                    )}
+
+                            </div>
+
+                            {/* EMAIL */}
+
+                            <div>
+
+                                <label className={labelClass}>
+                                    <FaEnvelope className="text-orange-400" />
+                                    Email
+                                </label>
+
+                                <div className="relative">
+
+                                    <input
+                                        type="email"
+                                        value={
+                                            userInfo?.email ||
+                                            ''
+                                        }
+                                        disabled
+                                        className={`${inputClass} ${disabledClass}`}
+                                    />
+
+                                    <FaEnvelope className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-600 text-xs" />
+
+                                </div>
+
+                            </div>
+
                             {/* DISTRICT */}
 
                             <div>
@@ -858,10 +1219,13 @@ const Profile = () => {
 
                                 {isEditing ? (
                                     <select
-                                        {...register('district', {
-                                            required:
-                                                'District is required',
-                                        })}
+                                        {...register(
+                                            'district',
+                                            {
+                                                required:
+                                                    'District is required',
+                                            }
+                                        )}
                                         className={`${inputClass} cursor-pointer`}
                                     >
 
@@ -869,14 +1233,16 @@ const Profile = () => {
                                             Select district
                                         </option>
 
-                                        {districts.map(d => (
-                                            <option
-                                                key={d.name}
-                                                value={d.name}
-                                            >
-                                                {d.name}
-                                            </option>
-                                        ))}
+                                        {districts.map(
+                                            d => (
+                                                <option
+                                                    key={d.name}
+                                                    value={d.name}
+                                                >
+                                                    {d.name}
+                                                </option>
+                                            )
+                                        )}
 
                                     </select>
                                 ) : (
@@ -916,11 +1282,16 @@ const Profile = () => {
 
                                 {isEditing ? (
                                     <select
-                                        {...register('upazila', {
-                                            required:
-                                                'Upazila is required',
-                                        })}
-                                        disabled={!selectedDistrictName}
+                                        {...register(
+                                            'upazila',
+                                            {
+                                                required:
+                                                    'Upazila is required',
+                                            }
+                                        )}
+                                        disabled={
+                                            !selectedDistrictName
+                                        }
                                         className={`${inputClass} cursor-pointer ${!selectedDistrictName
                                             ? disabledClass
                                             : ''
@@ -933,14 +1304,16 @@ const Profile = () => {
                                                 : 'Select district first'}
                                         </option>
 
-                                        {upazilasRes?.map(u => (
-                                            <option
-                                                key={u.id}
-                                                value={u.name}
-                                            >
-                                                {u.name}
-                                            </option>
-                                        ))}
+                                        {upazilasRes?.map(
+                                            u => (
+                                                <option
+                                                    key={u.id}
+                                                    value={u.name}
+                                                >
+                                                    {u.name}
+                                                </option>
+                                            )
+                                        )}
 
                                     </select>
                                 ) : (
@@ -994,13 +1367,9 @@ const Profile = () => {
 
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setIsEditing(false);
-                                                reset(userInfo);
-                                                setProfilePic(
-                                                    userInfo?.photoURL || ''
-                                                );
-                                            }}
+                                            onClick={
+                                                handleCancel
+                                            }
                                             className="flex-1 sm:flex-none px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                                         >
                                             Cancel
@@ -1017,6 +1386,7 @@ const Profile = () => {
                                                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
 
                                                     Uploading...
+
                                                 </span>
                                             ) : (
                                                 'Save Changes'

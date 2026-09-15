@@ -18,7 +18,7 @@ const AllUsers = () => {
         axiosSecure.get('/users').then(res => setUsers(res.data)).finally(() => setLoading(false));
     }, [axiosSecure]);
 
-    useEffect(() => { window.scrollTo(0, 0); document.title = "Dropvein | All Users"; }, []);
+    useEffect(() => { window.scrollTo(0, 0); document.title = "All Users"; }, []);
 
     const handleBlock = async (user) => {
         const result = await Swal.fire({ title: 'Block this user?', text: `Block ${user.name || 'this user'}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Yes, block' });

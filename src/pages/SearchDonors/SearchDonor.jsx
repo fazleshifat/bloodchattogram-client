@@ -23,7 +23,7 @@ const SearchDonors = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = 'Dropvein | Donors';
+        document.title = 'Donors';
         axiosSecure.get('/active-donors')
             .then(res => {
                 setDonors(res.data);
