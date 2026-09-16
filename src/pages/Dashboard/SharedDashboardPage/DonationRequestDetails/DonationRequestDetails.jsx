@@ -62,7 +62,7 @@ const DonationRequestDetails = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = 'Dropvein | Donation Request Details';
+        document.title = 'Donation Request Details';
     }, []);
 
     if (isLoading) {
@@ -491,7 +491,6 @@ const DonationRequestDetails = () => {
 
                     {/* Donor Information */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-green-200 dark:border-green-800 p-3 h-fit">
-
                         <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
                             Donor Information
                         </h4>

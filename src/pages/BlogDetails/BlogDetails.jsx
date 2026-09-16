@@ -28,7 +28,7 @@ const BlogDetails = () => {
     if (isLoading) return <Spinner />;
     if (isError || !blog) return (
         <div className="min-h-[60vh] flex items-center justify-center">
-            <p className="text-red-500 text-lg font-medium">Failed to load blog details.</p>
+            <p className="text-red-500 text-lg font-medium">Failed to load story details.</p>
         </div>
     );
 
@@ -37,7 +37,7 @@ const BlogDetails = () => {
             <div className="max-w-3xl mx-auto">
                 {/* Back Button */}
                 <Link to="/blogs" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 mb-8 transition-colors">
-                    <FaArrowLeft className="text-xs" /> Back to Blogs
+                    <FaArrowLeft className="text-xs" /> Back to Stories
                 </Link>
 
                 {/* Article */}

@@ -12,7 +12,7 @@ const Inbox = () => {
     useEffect(() => {
         const fetchChats = async () => {
             try {
-                const res = await axios.get("https://dropvein-server.vercel.app/api/chats");
+                const res = await axios.get("http://localhost:5000/api/chats");
                 setConversations(res.data || []);
                 console.log(res.data)
             } catch (err) {
@@ -27,7 +27,7 @@ const Inbox = () => {
         if (!activeChat) return;
         const fetchMessages = async () => {
             try {
-                const res = await axios.get(`https://dropvein-server.vercel.app/api/chats/${activeChat.id}`);
+                const res = await axios.get(`http://localhost:5000/api/chats/${activeChat.id}`);
                 setMessages(res.data.messages || []);
             } catch (err) {
                 console.error("Error fetching messages:", err);
@@ -46,7 +46,7 @@ const Inbox = () => {
     const handleSelectChat = async (chat) => {
         setActiveChat(chat);
         try {
-            const res = await axios.get(`https://dropvein-server.vercel.app/api/chats/${chat.id}`);
+            const res = await axios.get(`http://localhost:5000/api/chats/${chat.id}`);
             setMessages(res.data.messages || []);
         } catch (err) {
             console.error("Error fetching messages:", err);
@@ -58,7 +58,7 @@ const Inbox = () => {
         if (!newMessage.trim() || !activeChat) return;
 
         try {
-            await axios.post(`https://dropvein-server.vercel.app/api/chats/${activeChat.id}/messages`, { text: newMessage });
+            await axios.post(`http://localhost:5000/api/chats/${activeChat.id}/messages`, { text: newMessage });
             setMessages((prev) => [
                 ...prev,
                 { id: Date.now(), text: newMessage, createdAt: new Date(), author: { type: "manager" } },

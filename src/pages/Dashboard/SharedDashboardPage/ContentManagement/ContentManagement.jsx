@@ -26,12 +26,12 @@ const ContentManagement = () => {
     const handleStatusToggle = async (id, currentStatus) => {
         const newStatus = currentStatus === 'draft' ? 'published' : 'draft';
         const confirm = await Swal.fire({
-            title: `${newStatus === 'published' ? 'Publish' : 'Unpublish'} this blog?`,
+            title: `${newStatus === 'published' ? 'Publish' : 'Unpublish'} this story?`,
             icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: `Yes, ${newStatus}`
         });
         if (confirm.isConfirmed) {
             updateStatus.mutate({ id, status: newStatus }, {
-                onSuccess: () => Swal.fire('Success!', `Blog is now ${newStatus}.`, 'success'),
+                onSuccess: () => Swal.fire('Success!', `Story is now ${newStatus}.`, 'success'),
                 onError: () => Swal.fire('Error!', 'Failed to update status.', 'error')
             });
         }
@@ -45,11 +45,11 @@ const ContentManagement = () => {
     const deleteBlog = useMutation({
         mutationFn: async (id) => { const res = await axiosSecure.delete(`/blogs/delete/${id}`); return res.data; },
         onSuccess: () => { queryClient.invalidateQueries(['blogs', user?.email]); Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false }); },
-        onError: () => Swal.fire({ icon: 'error', title: 'Failed!', text: 'Could not delete the blog.' })
+        onError: () => Swal.fire({ icon: 'error', title: 'Failed!', text: 'Could not delete the story.' })
     });
 
     const handleDelete = (id) => {
-        Swal.fire({ title: 'Delete this blog?', text: "This cannot be undone.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete' }).then(r => { if (r.isConfirmed) deleteBlog.mutate(id); });
+        Swal.fire({ title: 'Delete this story?', text: "This cannot be undone.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete' }).then(r => { if (r.isConfirmed) deleteBlog.mutate(id); });
     };
 
     const filteredBlogs = filter === 'all' ? blogs : blogs.filter(b => b.status === filter);
@@ -62,14 +62,14 @@ const ContentManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Content Management</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage blog posts - publish, unpublish, or delete.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage stories posts - publish, unpublish, or delete.</p>
                 </div>
                 {(role === 'admin' || role === 'volunteer') && (
                     <NavLink
                         to='/dashboard/content-management/add-blog'
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white text-sm font-semibold rounded-xl shadow-lg shadow-red-500/20 transition-all"
                     >
-                        <MdAddBox className="text-lg" /> Add Blog
+                        <MdAddBox className="text-lg" /> Add Story
                     </NavLink>
                 )}
             </div>
@@ -94,11 +94,11 @@ const ContentManagement = () => {
             {blogs.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center">
                     <FaTint className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">No blogs created yet.</p>
+                    <p className="text-gray-500 dark:text-gray-400">No story created yet.</p>
                 </div>
             ) : filteredBlogs.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center">
-                    <p className="text-gray-500 dark:text-gray-400">No blogs found for <strong>"{filter}"</strong> filter.</p>
+                    <p className="text-gray-500 dark:text-gray-400">No story found for <strong>"{filter}"</strong> filter.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

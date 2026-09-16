@@ -82,7 +82,7 @@ const Navbar = () => {
                     <div className="hidden md:flex items-center gap-1">
                         <NavLink to="/" className={navLinkClass} end>{t('home')}</NavLink>
                         <NavLink to="/blood-donation-requests" className={navLinkClass}>{t('donationRequests')}</NavLink>
-                        <NavLink to="/blogs" className={navLinkClass}>{t('blog')}</NavLink>
+                        <NavLink to="/blogs" className={navLinkClass}>{t('stories')}</NavLink>
                         {user && <NavLink to="/dashboard" className={navLinkClass}>{t('dashboard')}</NavLink>}
                         <BookingButton />
                     </div>
@@ -116,7 +116,14 @@ const Navbar = () => {
                                             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                                         >
                                             <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-red-200 dark:ring-red-800">
-                                                <img src={user?.photoURL || 'https://i.ibb.co/5GzXkwq/user.png'} className="w-full h-full object-cover" />
+                                                <img
+                                                    src={
+                                                        user?.photoURL && user.photoURL !== ''
+                                                            ? user.photoURL
+                                                            : 'https://i.ibb.co/5GzXkwq/user.png'
+                                                    }
+                                                    className="w-full h-full object-cover"
+                                                />
                                             </div>
                                             <FiChevronDown className="text-gray-500 text-sm" />
                                         </div>
@@ -126,7 +133,14 @@ const Navbar = () => {
                                         >
                                             <div className="text-center pb-3 border-b border-gray-200 dark:border-gray-700">
                                                 <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-2 ring-2 ring-red-200 dark:ring-red-800">
-                                                    <img src={user?.photoURL || 'https://i.ibb.co/5GzXkwq/user.png'} className="w-full h-full object-cover" />
+                                                    <img
+                                                        src={
+                                                            user?.photoURL && user.photoURL !== ''
+                                                                ? user.photoURL
+                                                                : 'https://i.ibb.co/5GzXkwq/user.png'
+                                                        }
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 </div>
                                                 <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">
                                                     {user?.displayName}
@@ -317,7 +331,7 @@ const Navbar = () => {
                                     </span>
 
                                     <span className="flex-1">
-                                        {t('blog')}
+                                        {t('stories')}
                                     </span>
 
                                     {isActive && (

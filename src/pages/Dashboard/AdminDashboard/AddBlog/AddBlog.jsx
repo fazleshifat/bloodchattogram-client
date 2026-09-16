@@ -45,7 +45,7 @@ const AddBlog = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = "Add Blog";
+        document.title = "Add Stories";
     }, []);
 
 
@@ -70,7 +70,7 @@ const AddBlog = () => {
             const response = await axiosSecure.post('/create-blog', blogData);
             console.log(response.data)
             if (response.data.insertedId) {
-                Swal.fire('Success!', 'Blog created successfully', 'success');
+                Swal.fire('Success!', 'Stories created successfully', 'success');
                 reset();
                 setContent('');
                 setThumbnailURL('');
@@ -78,23 +78,23 @@ const AddBlog = () => {
             }
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'Something went wrong while creating the blog.', 'error');
+            Swal.fire('Error', 'Something went wrong while creating the story.', 'error');
         }
     };
 
     return (
         <div className="min-w-10/12 mx-auto p-4">
-            <h2 className="text-2xl font-bold text-center mb-6 text-primary">📝 Add New Blog</h2>
+            <h2 className="text-2xl font-bold text-center mb-6 text-primary">📝 Add New Story</h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 bg-white dark:bg-base-200 p-6 rounded-xl shadow">
 
                 {/* Title */}
                 <div>
-                    <label className="font-medium">Blog Title</label>
+                    <label className="font-medium">Story Title</label>
                     <input
                         type="text"
                         {...register('title', { required: 'Title is required' })}
-                        placeholder="Enter blog title"
+                        placeholder="Enter story title"
                         className="input input-bordered w-full mt-1"
                     />
                     {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
@@ -120,7 +120,7 @@ const AddBlog = () => {
 
                 {/* Content */}
                 <div>
-                    <label className="font-medium">Blog Content</label>
+                    <label className="font-medium">Story Content</label>
                     <JoditEditor
                         ref={editor}
                         value={content}
@@ -137,7 +137,7 @@ const AddBlog = () => {
                     className="btn btn-primary w-full"
                     disabled={uploading}
                 >
-                    {uploading ? 'Uploading...' : 'Create Blog'}
+                    {uploading ? 'Uploading...' : 'Create Story'}
                 </button>
             </form>
         </div>

@@ -168,8 +168,11 @@ const DashboardLayout = () => {
                         <ThemeToggle />
 
                         <img
-                            src={user?.photoURL}
-                            alt="User"
+                            src={
+                                user?.photoURL && user.photoURL !== ''
+                                    ? user.photoURL
+                                    : 'https://i.ibb.co/5GzXkwq/user.png'
+                            }
                             className="w-9 h-9 rounded-xl object-cover ring-2 ring-slate-100 dark:ring-slate-700"
                         />
 
@@ -214,10 +217,10 @@ const DashboardLayout = () => {
 
                                 <img
                                     src={
-                                        user?.photoURL ||
-                                        'https://i.ibb.co/5GzXkwq/user.png'
+                                        user?.photoURL && user.photoURL !== ''
+                                            ? user.photoURL
+                                            : 'https://i.ibb.co/5GzXkwq/user.png'
                                     }
-                                    alt="User"
                                     className="w-11 h-11 rounded-xl object-cover"
                                 />
 

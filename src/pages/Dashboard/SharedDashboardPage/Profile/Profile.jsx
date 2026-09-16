@@ -19,6 +19,7 @@ import {
     FaMapMarkedAlt,
     FaHeart,
     FaPhone,
+    FaTrash,
 } from 'react-icons/fa';
 
 const bloodGroups = [
@@ -44,6 +45,7 @@ const Profile = () => {
     const [userInfo, setUserInfo] = useState({});
     const [profilePic, setProfilePic] = useState('');
     const [isNewImage, setIsNewImage] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
     const [uploading, setUploading] = useState(false);
 
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -162,66 +164,48 @@ const Profile = () => {
     }, []);
 
     // ==========================================
-    // IMAGE UPLOAD
+    // IMAGE SELECT - PREVIEW ONLY
     // ==========================================
 
-    const handleImageUpload = async e => {
+    const handleImageUpload = e => {
         const image = e.target.files?.[0];
 
         if (!image) return;
 
         if (!image.type.startsWith('image/')) {
             toast.error('Please select a valid image.');
+            e.target.value = '';
             return;
         }
 
         if (image.size > 5 * 1024 * 1024) {
             toast.error('Image must be smaller than 5MB.');
+            e.target.value = '';
             return;
         }
 
-        const formData = new FormData();
+        // Store the actual file for later upload
+        setSelectedImage(image);
 
-        formData.append('image', image);
+        // Show local preview only
+        const previewUrl = URL.createObjectURL(image);
 
-        const uploadUrl =
-            `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_image_upload_key}`;
+        setProfilePic(previewUrl);
+        setIsNewImage(true);
 
-        try {
-            setUploading(true);
-
-            const res = await axios.post(
-                uploadUrl,
-                formData
-            );
-
-            setProfilePic(
-                res.data.data.url
-            );
-
-            setIsNewImage(true);
-        } catch (error) {
-            console.error(
-                'Image upload error:',
-                error
-            );
-
-            toast.error(
-                'Image upload failed.'
-            );
-        } finally {
-            setUploading(false);
-        }
+        // No ImgBB upload here
     };
 
     // ==========================================
-    // REMOVE NEW IMAGE PREVIEW
+    // REMOVE SELECTED IMAGE
     // ==========================================
 
     const handleRemoveImage = () => {
-        setProfilePic(
-            userInfo?.photoURL || ''
-        );
+        // Remove the selected file
+        setSelectedImage(null);
+
+        // Restore original profile image
+        setProfilePic(userInfo?.photoURL || '');
 
         setIsNewImage(false);
     };
@@ -259,11 +243,12 @@ const Profile = () => {
                 phone: editablePhone,
             });
 
-            setProfilePic(
-                userInfo?.photoURL || ''
-            );
+            setProfilePic(userInfo?.photoURL || '');
+
+            setSelectedImage(null);
 
             setIsNewImage(false);
+
             setIsEditing(true);
         }
     };
@@ -274,10 +259,7 @@ const Profile = () => {
 
     const handleCancel = () => {
         const originalPhone =
-            userInfo?.phone?.replace(
-                /^\+880/,
-                ''
-            ) || '';
+            userInfo?.phone?.replace(/^\+880/, '') || '';
 
         setPhoneNumber(originalPhone);
 
@@ -286,16 +268,17 @@ const Profile = () => {
             phone: originalPhone,
         });
 
-        setProfilePic(
-            userInfo?.photoURL || ''
-        );
+        setProfilePic(userInfo?.photoURL || '');
+
+        setSelectedImage(null);
 
         setIsNewImage(false);
+
         setIsEditing(false);
     };
 
     // ==========================================
-    // SUBMIT
+    // SUBMIT PROFILE
     // ==========================================
 
     const onSubmit = async data => {
@@ -332,82 +315,235 @@ const Profile = () => {
             denyButtonText: 'Continue Editing',
         });
 
-        if (result.isConfirmed) {
+        if (result.isDenied) {
+            toast('Continue editing...');
+            return;
+        }
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            setUploading(true);
+
+            // ==========================================
+            // STEP 1: UPLOAD NEW IMAGE ONLY IF SELECTED
+            // ==========================================
+
+            let finalPhotoURL = userInfo?.photoURL || '';
+
+            if (selectedImage) {
+                const formData = new FormData();
+
+                formData.append('image', selectedImage);
+
+                const uploadResponse = await axiosSecure.post(
+                    '/upload-profile-image',
+                    formData,
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+
+                finalPhotoURL = uploadResponse?.data?.photoURL;
+
+                if (!finalPhotoURL) {
+                    throw new Error(
+                        'Image upload failed. Image is missing.'
+                    );
+                }
+            }
+            // ==========================================
+            // STEP 2: PREPARE PROFILE DATA
+            // ==========================================
+
             const updatedInfo = {
                 name: data.name,
 
-                photoURL:
-                    profilePic ||
-                    userInfo?.photoURL ||
-                    '',
+                photoURL: finalPhotoURL,
 
-                // Add country code only when saving
                 phone: `+880${phoneNumber}`,
 
                 district: data.district,
+
                 upazila: data.upazila,
+
                 blood_group: data.blood_group,
             };
 
-            try {
-                await updateUserProfile({
-                    displayName: updatedInfo.name,
-                    photoURL: updatedInfo.photoURL,
-                });
+            // ==========================================
+            // STEP 3: UPDATE FIREBASE PROFILE
+            // ==========================================
 
-                await axios.patch(
-                    `/users/${user.email}`,
-                    updatedInfo
-                );
+            await updateUserProfile({
+                displayName: updatedInfo.name,
 
-                setUserInfo(prev => ({
-                    ...prev,
-                    ...updatedInfo,
-                }));
+                photoURL: updatedInfo.photoURL,
+            });
 
-                // Keep form value without +880
-                setPhoneNumber(
-                    phoneNumber
-                );
+            // ==========================================
+            // STEP 4: SAVE TO MONGODB
+            // ==========================================
 
-                reset({
-                    ...updatedInfo,
-                    phone: phoneNumber,
-                });
-
-                setIsNewImage(false);
-
-                toast.success(
-                    'Profile updated!'
-                );
-
-                await Swal.fire({
-                    title: 'Success',
-                    text: 'Your profile has been updated.',
-                    icon: 'success',
-                    confirmButtonColor: '#dc2626',
-                });
-
-                setIsEditing(false);
-            } catch (err) {
-                console.error(err);
-
-                toast.error(
-                    'Update failed!'
-                );
-
-                Swal.fire(
-                    'Error',
-                    'Something went wrong during update.',
-                    'error'
-                );
-            }
-        } else if (result.isDenied) {
-            toast(
-                'Continue editing...'
+            await axiosSecure.patch(
+                `/users/${user.email}`,
+                updatedInfo
             );
+
+            // ==========================================
+            // STEP 5: UPDATE LOCAL STATE
+            // ==========================================
+
+            setUserInfo(prev => ({
+                ...prev,
+                ...updatedInfo,
+            }));
+
+            setProfilePic(
+                updatedInfo.photoURL
+            );
+
+            setSelectedImage(null);
+
+            setIsNewImage(false);
+
+            setPhoneNumber(phoneNumber);
+
+            reset({
+                ...updatedInfo,
+                phone: phoneNumber,
+            });
+
+            toast.success(
+                'Profile updated successfully!'
+            );
+
+            await Swal.fire({
+                title: 'Success',
+                text: 'Your profile has been updated.',
+                icon: 'success',
+                confirmButtonColor: '#dc2626',
+            });
+
+            setIsEditing(false);
+
+        } catch (err) {
+            console.error(
+                'Profile update error:',
+                err
+            );
+
+            toast.error(
+                'Update failed! Your profile was not saved.'
+            );
+
+            Swal.fire(
+                'Error',
+                err?.response?.data?.message ||
+                'Something went wrong during profile update.',
+                'error'
+            );
+
+        } finally {
+            setUploading(false);
         }
     };
+
+    // ==========================================
+    // DELETE EXISTING PROFILE IMAGE
+    // ==========================================
+
+    const handleDeleteImage = async () => {
+        const result = await Swal.fire({
+            title: 'Delete Profile Picture?',
+            text: 'Are you sure you want to delete your profile picture?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            setUploading(true);
+
+            // ==========================================
+            // DELETE IMAGE FROM BACKEND + IMGBB + MONGODB
+            // ==========================================
+
+            await axiosSecure.delete(
+                `/users/${user.email}/profile-image`
+            );
+
+            // ==========================================
+            // UPDATE FIREBASE PROFILE
+            // ==========================================
+
+            await updateUserProfile({
+                displayName:
+                    userInfo?.name ||
+                    user?.displayName ||
+                    '',
+                photoURL: '',
+            });
+
+            // ==========================================
+            // UPDATE LOCAL STATE
+            // ==========================================
+
+            setUserInfo(prev => ({
+                ...prev,
+                photoURL: '',
+                photoDeleteURL: '',
+            }));
+
+            setProfilePic('');
+
+            setSelectedImage(null);
+
+            setIsNewImage(false);
+
+            toast.success(
+                'Profile picture deleted successfully!'
+            );
+
+            await Swal.fire({
+                title: 'Deleted',
+                text: 'Your profile picture has been removed.',
+                icon: 'success',
+                confirmButtonColor: '#dc2626',
+            });
+
+        } catch (error) {
+            console.error(
+                'Profile image delete error:',
+                error
+            );
+
+            toast.error(
+                'Failed to delete profile picture.'
+            );
+
+            Swal.fire(
+                'Error',
+                error?.response?.data?.message ||
+                'Something went wrong while deleting your profile picture.',
+                'error'
+            );
+
+        } finally {
+            setUploading(false);
+        }
+    };
+
 
     // ==========================================
     // STYLES
@@ -627,61 +763,128 @@ const Profile = () => {
 
                                     </div>
 
-                                    {/* Remove NEWLY SELECTED Image */}
 
-                                    {isEditing &&
-                                        isNewImage && (
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    handleRemoveImage
-                                                }
-                                                className="
-                                                    absolute
-                                                    top-0
-                                                    right-0
-                                                    w-8
-                                                    h-8
-                                                    rounded-full
-                                                    bg-red-600
-                                                    text-white
-                                                    flex
-                                                    items-center
-                                                    justify-center
-                                                    border-4
-                                                    border-white
-                                                    dark:border-gray-900
-                                                    cursor-pointer
-                                                    shadow-lg
-                                                    hover:bg-red-700
-                                                    hover:scale-105
-                                                    transition-all
-                                                    z-10
-                                                "
-                                                title="Remove selected image"
-                                            >
-                                                <FaTimes className="text-xs" />
-                                            </button>
-                                        )}
-
-                                    {/* Camera */}
+                                    {/* ==========================================
+                                    IMAGE ACTION BUTTONS
+                                    ========================================== */}
 
                                     {isEditing && (
-                                        <label className="absolute bottom-1 right-1 w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center border-4 border-white dark:border-gray-900 cursor-pointer shadow-lg hover:bg-red-700 hover:scale-105 transition-all">
+                                        <>
+                                            {/* ==========================================
+            NEW IMAGE PREVIEW → SHOW CROSS
+        ========================================== */}
 
-                                            <FaCamera className="text-sm" />
+                                            {isNewImage && selectedImage ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveImage}
+                                                    className="
+                    absolute
+                    top-0
+                    right-0
+                    w-8
+                    h-8
+                    rounded-full
+                    bg-red-600
+                    text-white
+                    flex
+                    items-center
+                    justify-center
+                    border-4
+                    border-white
+                    dark:border-gray-900
+                    cursor-pointer
+                    shadow-lg
+                    hover:bg-red-700
+                    hover:scale-105
+                    transition-all
+                    z-10
+                "
+                                                    title="Remove selected image"
+                                                >
+                                                    <FaTimes className="text-xs" />
+                                                </button>
+                                            ) : (
+                                                /* ==========================================
+                                                    EXISTING IMAGE → SHOW DELETE
+                                                ========================================== */
 
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={
-                                                    handleImageUpload
-                                                }
-                                                className="hidden"
-                                            />
+                                                userInfo?.photoURL && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleDeleteImage}
+                                                        disabled={uploading}
+                                                        className="
+                        absolute
+                        top-0
+                        right-0
+                        w-8
+                        h-8
+                        rounded-full
+                        bg-red-600
+                        text-white
+                        flex
+                        items-center
+                        justify-center
+                        border-4
+                        border-white
+                        dark:border-gray-900
+                        cursor-pointer
+                        shadow-lg
+                        hover:bg-red-700
+                        hover:scale-105
+                        transition-all
+                        z-10
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                    "
+                                                        title="Delete profile picture"
+                                                    >
+                                                        <FaTrash className="text-xs" />
+                                                    </button>
+                                                )
+                                            )}
 
-                                        </label>
+                                            {/* ==========================================
+            CAMERA BUTTON
+        ========================================== */}
+
+                                            <label
+                                                className="
+                absolute
+                bottom-1
+                right-1
+                w-11
+                h-11
+                rounded-full
+                bg-red-600
+                text-white
+                flex
+                items-center
+                justify-center
+                border-4
+                border-white
+                dark:border-gray-900
+                cursor-pointer
+                shadow-lg
+                hover:bg-red-700
+                hover:scale-105
+                transition-all
+            "
+                                            >
+                                                <FaCamera className="text-sm" />
+
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </>
                                     )}
+
+
 
                                     {/* Verified */}
 
@@ -1385,7 +1588,9 @@ const Profile = () => {
 
                                                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
 
-                                                    Uploading...
+                                                    {selectedImage
+                                                        ? 'Uploading & Saving...'
+                                                        : 'Saving...'}
 
                                                 </span>
                                             ) : (

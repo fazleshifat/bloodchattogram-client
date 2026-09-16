@@ -27,7 +27,7 @@ const BloodDonationRequests = () => {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.title = 'Dropvein | Blood Donation Request';
+        document.title = 'Blood Donation Request';
     }, []);
 
     const upcomingRequests = donationRequests.filter((req) => {
@@ -88,11 +88,11 @@ const BloodDonationRequests = () => {
                         </div>
 
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
-                            No Upcoming Requests
+                            No Pending Requests
                         </h3>
 
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            There are currently no upcoming blood donation requests.
+                            There are currently no pending blood donation requests.
                         </p>
                     </div>
                 ) : (

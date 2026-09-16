@@ -26,7 +26,7 @@ const Blogs = () => {
     if (isError) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <p className="text-red-500 text-lg font-medium">Failed to load blogs.</p>
+                <p className="text-red-500 text-lg font-medium">Failed to load stories.</p>
             </div>
         );
     }
@@ -36,10 +36,10 @@ const Blogs = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-12">
                     <span className="inline-block px-4 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium mb-4">
-                        Our Blog
+                        Our Operation Stories
                     </span>
                     <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                        Latest <span className="gradient-text">Articles</span>
+                        Latest <span className="gradient-text">Stories</span>
                     </h2>
                     <div className="section-divider"></div>
                 </div>
