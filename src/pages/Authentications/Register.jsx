@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 const Register = () => {
     const { t } = useTranslation('auth');
     const { createUser, updateUserProfile } = useAuth();
-    const { districts, upazilas } = useLoaderData();
+    const { districts } = useLoaderData();
 
     const {
         register,
@@ -39,10 +39,6 @@ const Register = () => {
         window.scrollTo(0, 0);
         document.title = t('register.pageTitle');
     }, [t]);
-
-    const filteredUpazilas = upazilas?.filter(
-        upazila => upazila.district_id == selectedDistrict
-    );
 
     useEffect(() => {
         if (selectedDistrict) {
@@ -87,7 +83,7 @@ const Register = () => {
                 blood_group: data.blood_group,
                 status: 'active',
                 district: selectedDistrictName,
-                upazila: data.upazila || '',
+                area: data.area || '',
             };
 
             await axios.post('/users', userInfo);
@@ -123,7 +119,7 @@ const Register = () => {
         'mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300';
 
     const iconInputClass =
-        'w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-red-400 focus:bg-white focus:ring-3 focus:ring-red-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500 dark:focus:border-red-500 dark:focus:bg-gray-750';
+        'w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-red-400 focus:bg-white focus:ring-3 focus:ring-red-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500 dark:focus:border-red-500 dark:focus:bg-white dark:focus:ring-red-500/10';
 
     const RequiredMark = () => (
         <span className="ml-0.5 text-red-500">*</span>
@@ -134,6 +130,7 @@ const Register = () => {
             <div className="mx-auto my-auto w-full max-w-2xl">
                 {/* CARD */}
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/40 dark:border-gray-800 dark:bg-gray-900 dark:shadow-black/20">
+
                     {/* HEADER */}
                     <div className="border-b border-gray-100 px-5 py-5 dark:border-gray-800 sm:px-7">
                         <div className="flex items-center gap-3">
@@ -159,6 +156,7 @@ const Register = () => {
                         className="px-5 py-6 sm:px-7 sm:py-7"
                     >
                         <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+
                             {/* NAME */}
                             <div>
                                 <label className={labelClass}>
@@ -215,6 +213,7 @@ const Register = () => {
                                                 .slice(0, 10);
 
                                             setPhoneNumber(value);
+
                                             setValue('phone', value, {
                                                 shouldValidate: true,
                                             });
@@ -338,33 +337,21 @@ const Register = () => {
                                 )}
                             </div>
 
-                            {/* UPAZILA */}
+                            {/* AREA / THANA / UPAZILA / ROAD */}
                             <div>
                                 <label className={labelClass}>
-                                    Upazila
+                                    Area / Thana / Upazila / Road
                                 </label>
 
                                 <div className="relative">
                                     <FaMapMarkerAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-400" />
 
-                                    <select
-                                        {...register('upazila')}
-                                        disabled={!selectedDistrict}
-                                        className={`${iconInputClass} appearance-none disabled:cursor-not-allowed disabled:opacity-50`}
-                                    >
-                                        <option value="">
-                                            Select upazila
-                                        </option>
-
-                                        {filteredUpazilas?.map(upazila => (
-                                            <option
-                                                key={upazila.id}
-                                                value={upazila.name}
-                                            >
-                                                {upazila.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <input
+                                        {...register('area')}
+                                        type="text"
+                                        placeholder="Enter area, thana, upazila or road"
+                                        className={iconInputClass}
+                                    />
                                 </div>
                             </div>
 
