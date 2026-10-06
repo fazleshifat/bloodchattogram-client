@@ -40,17 +40,29 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
+
+        // Default language for new users
+        lng: 'bn',
+
+        // Used only when a translation is missing
         fallbackLng: 'en',
+
         supportedLngs: ['en', 'bn'],
+
         ns: ['common', 'navigation', 'auth', 'home', 'footer'],
         defaultNS: 'common',
+
         interpolation: {
-            escapeValue: false, // React already escapes output
+            escapeValue: false,
         },
+
         detection: {
-            // Persist the user's choice; refreshing should not reset it.
-            order: ['localStorage', 'navigator'],
+            // First check user's saved choice.
+            // If nothing is saved, use Bangla.
+            order: ['localStorage'],
+
             caches: ['localStorage'],
+
             lookupLocalStorage: 'bloodchattogram_lang',
         },
     });
